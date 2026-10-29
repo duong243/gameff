@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Đang Trong Trận Đấu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Roboto', sans-serif; touch-action: none; }
+    canvas { display: block; }
+    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+    #crosshair { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background-color: rgba(0, 255, 0, 0.8); border-radius: 50%; transform: translate(-50%, -50%); }
+    #hitmarker { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: red; font-size: 24px; font-weight: bold; opacity: 0; transition: opacity 0.1s; }
+    #exit-btn { position: absolute; top: 20px; left: 20px; padding: 8px 15px; background: rgba(0,0,0,0.6); color: white; border: 1px solid #555; border-radius: 5px; font-size: 16px; pointer-events: auto; cursor: pointer; z-index: 1001; }
+    #scoreboard { position: absolute; top: 20px; left: 100px; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 8px; border: 1px solid #ffcc00; color: white; z-index: 1000; }
+    #scoreboard .title { font-family: 'Teko', sans-serif; font-size: 18px; color: #aaa; margin-bottom: 5px; letter-spacing: 1px; }
+    #scoreboard .score { font-family: 'Teko', sans-serif; font-size: 28px; font-weight: bold; color: #ffcc00; margin-bottom: 5px; line-height: 1; }
+    #scoreboard .stats { font-size: 14px; margin-bottom: 2px; font-weight: bold; }
+    .status-bar-container { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 40%; display: flex; flex-direction: column; gap: 5px; }
+    .bar-bg { width: 100%; height: 14px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 5px; overflow: hidden; }
+    .bar-fill { height: 100%; transition: width 0.2s; }
+    #hp-bar { background: linear-gradient(90deg, #ff0000, #ff5555); width: 100%; }
+    #armor-bar { background: linear-gradient(90deg, #00aaff, #00ffff); width: 100%; }
+    .hp-text { position: absolute; bottom: 55px; left: 50%; transform: translateX(-50%); color: white; font-family: 'Teko', sans-serif; font-size: 24px; text-shadow: 1px 1px 2px black; font-weight: bold; }
+    .weapon-info { position: absolute; top: 20px; right: 20px; text-align: right; color: white; text-shadow: 1px 1px 2px black; }
+    .weapon-info h2 { margin: 0; font-size: 28px; font-family: 'Teko', sans-serif; line-height: 1; color: #ffcc00; }
+    .ammo-count { font-family: 'Teko', sans-serif; font-size: 48px; font-weight: bold; color: #fff; line-height: 1; }
+    #killfeed { position: absolute; top: 80px; right: 20px; color: white; font-size: 18px; text-align: right; text-shadow: 1px 1px 2px black; font-weight: bold; }
+    #mobile-controls { display: none; position: absolute; width: 100%; height: 100%; pointer-events: none; }
+    @media (pointer: coarse) {
+        #mobile-controls { display: block; }
+        #joystick-zone { position: absolute; bottom: 80px; left: 50px; width: 140px; height: 140px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: auto; }
+        #joystick-knob { position: absolute; top: 50%; left: 50%; width: 60px; height: 60px; background: rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); }
+        .action-btn { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); pointer-events: auto; display: flex; justify-content: center; align-items: center; font-family: 'Teko', sans-serif; font-size: 20px; color: white; font-weight: bold; text-shadow: 1px 1px 2px black; }
+        #btn-shoot { bottom: 80px; right: 50px; width: 100px; height: 100px; background: rgba(255, 0, 0, 0.4); border-color: rgba(255, 0, 0, 0.8); }
+        #btn-jump { bottom: 200px; right: 60px; width: 70px; height: 70px; }
+        #btn-switch { bottom: 140px; right: 170px; width: 70px; height: 70px; }
+        .status-bar-container { bottom: 200px; width: 60%; }
+        .hp-text { bottom: 225px; }
+        #scoreboard { top: 80px; left: 20px; }
+    }
+  </style>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="ui-layer">
+    <button id="exit-btn" onclick="window.location.href='/'">Thoát</button>
+    <div id="scoreboard">
+        <div class="title">THÀNH TÍCH</div>
+        <div class="score">Điểm: <span id="score-display">0</span></div>
+        <div class="stats" style="color: #00ff00;">🔫 Kills: <span id="kills-display">0</span></div>
+        <div class="stats" style="color: #ff4444;">🎯 Headshots: <span id="headshots-display">0</span></div>
+    </div>
+    <div id="crosshair"></div>
+    <div id="hitmarker">X</div>
+    <div id="killfeed"></div>
+    <div class="hp-text" id="hp-text">100 HP</div>
+    <div class="status-bar-container">
+      <div class="bar-bg"><div class="bar-fill" id="hp-bar"></div></div>
+      <div class="bar-bg"><div class="bar-fill" id="armor-bar"></div></div>
+    </div>
+    <div class="weapon-info">
+      <h2 id="weapon-name">SÚNG LỤC</h2>
+      <div class="ammo-count" id="ammo-display">∞</div>
+    </div>
+  </div>
+
+  <div id="mobile-controls">
+    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <div class="action-btn" id="btn-shoot" onclick="mobileShoot()">BẮN</div>
+    <div class="action-btn" id="btn-jump" onclick="mobileJump()">NHẢY</div>
+    <div class="action-btn" id="btn-switch" onclick="mobileSwitch()">ĐỔI</div>
+  </div>
+
+  <script type="module" src="/game.js"></script>
+</body>
+</html>

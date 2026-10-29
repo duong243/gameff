@@ -1,0 +1,400 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Sảnh Chờ - Free Fire Web</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .room-panel { margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .room-input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #555; background: rgba(0,0,0,0.6); color: white; box-sizing: border-box; font-size: 16px; }
+        .mission-item { background: rgba(255,255,255,0.05); border-left: 4px solid #2196f3; padding: 15px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .mission-item.completed { border-left-color: #4caf50; }
+        .mission-item.claimed { opacity: 0.5; border-left-color: #555; }
+        .mission-text h4 { margin: 0 0 5px 0; color: #fff; }
+        .mission-text p { margin: 0; color: #aaa; font-size: 14px; }
+        .mission-reward { color: #ffcc00; font-weight: bold; margin-right: 15px; }
+        
+        .profile-card { background: #222; border: 1px solid #555; padding: 20px; border-radius: 10px; text-align: center; }
+        .profile-avatar { width: 80px; height: 80px; background: #444; border-radius: 50%; margin: 0 auto 15px auto; border: 3px solid #ffcc00; }
+        .profile-name { font-family: 'Teko', sans-serif; font-size: 30px; color: #fff; margin: 0; }
+        .profile-stats { display: flex; justify-content: space-around; margin-top: 20px; }
+        .stat-box { background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 5px; }
+        .stat-val { font-size: 24px; font-weight: bold; color: #ffcc00; }
+        .stat-label { font-size: 12px; color: #aaa; text-transform: uppercase; }
+        .leaderboard-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #444; font-size: 18px; cursor: pointer; transition: 0.2s; }
+        .leaderboard-row:hover { background: rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+    <div class="bg-overlay"></div>
+
+    <div id="lobby">
+        <div class="top-bar">
+            <div class="player-info">
+                <div class="avatar"></div>
+                <div class="name-rank">
+                    <span class="name" id="display-username" style="font-size: 20px;">Khách</span>
+                    <span class="level" id="display-level" style="color: #ffcc00;">Lv. 1 | Rank 0</span>
+                </div>
+            </div>
+            <div class="currencies">
+                <div class="currency-box gold-box"><span class="icon">💰</span><span id="gold-display">0</span></div>
+                <div class="currency-box diamond-box"><span class="icon">💎</span><span id="diamond-display">0</span></div>
+                <button id="btn-make-admin" class="settings-btn" style="font-size: 14px; color: #ff3333; border: 1px solid #ff3333; padding: 5px; border-radius: 5px; display: none;" onclick="makeMeAdmin()">CẤP ADMIN</button>
+            </div>
+        </div>
+
+        <div class="left-menu">
+            <div class="menu-item" onclick="window.location.href='/shop.html'"><div class="menu-icon">🛒</div><span>STORE</span></div>
+            <div class="menu-item" onclick="window.location.href='/spin.html'"><div class="menu-icon">🎰</div><span>LUCK ROYALE</span></div>
+            <div class="menu-item" onclick="openLeaderboard()"><div class="menu-icon">🏆</div><span>RANKING</span></div>
+            <div class="menu-item" onclick="openMailbox()"><div class="menu-icon">📬</div><span>MAILBOX</span></div>
+            <div class="menu-item" onclick="openMissions()"><div class="menu-icon">📋</div><span>MISSIONS</span></div>
+            <div class="menu-item" style="border-left-color: #f44336; margin-top: 20px;" onclick="logout()">
+                <div class="menu-icon">🚪</div><span style="color: #f44336;">ĐĂNG XUẤT</span>
+            </div>
+        </div>
+
+        <div class="center-stage">
+            <div class="level-up" id="level-up-text">LEVEL 1</div>
+            <div class="character-preview">
+                <div class="head"></div>
+                <div class="body"></div>
+                <div class="legs"></div>
+            </div>
+        </div>
+
+        <div class="right-menu">
+            <div class="room-panel">
+                <button class="game-btn" style="width:100%; padding: 10px;" onclick="openCreateRoomModal()">➕ TẠO PHÒNG</button>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="join-room-id" class="room-input" placeholder="Nhập mã phòng...">
+                    <button class="game-btn" style="padding: 0 20px;" onclick="joinRoom()">VÀO</button>
+                </div>
+            </div>
+
+            <div class="game-mode-box">
+                <div class="mode-title">BATTLE ROYALE</div>
+                <div class="mode-map">Bermuda</div>
+            </div>
+            <button class="start-btn" onclick="startGamePublic()">
+                <span class="start-icon">🎮</span>
+                <span class="start-text">START</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL TẠO PHÒNG -->
+    <div class="modal" id="createRoomModal">
+        <div class="modal-content">
+            <h2>CHỌN CHẾ ĐỘ TẠO PHÒNG</h2>
+            <div class="mode-card" onclick="confirmCreateRoom('city')"><div><h3 style="margin:0;">🏙️ Thành Phố</h3></div><button class="ff-btn">Tạo</button></div>
+            <div class="mode-card" onclick="confirmCreateRoom('desert')"><div><h3 style="margin:0;">🏜️ Sa Mạc</h3></div><button class="ff-btn">Tạo</button></div>
+            <div class="mode-card" onclick="confirmCreateRoom('map1')"><div><h3 style="margin:0;">🌲 Rừng Xanh</h3></div><button class="ff-btn">Tạo</button></div>
+            <button class="close-btn" onclick="document.getElementById('createRoomModal').style.display='none'">Đóng</button>
+        </div>
+    </div>
+
+    <!-- MODAL HIỂN THỊ MÃ PHÒNG -->
+    <div class="modal" id="roomCodeModal">
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="color: #4caf50;">✅ TẠO PHÒNG THÀNH CÔNG!</h2>
+            <p style="font-size: 20px;">Mã phòng của bạn là:</p>
+            <h1 id="room-code-display" style="font-size: 60px; color: #ffcc00; letter-spacing: 5px; margin: 20px 0;">...</h1>
+            <p style="color: #aaa;">Hãy gửi mã này cho bạn bè để họ vào chơi cùng!</p>
+            <button class="ff-btn" style="font-size: 20px; padding: 15px 40px; margin-top: 20px;" onclick="enterCreatedRoom()">VÀO TRẬN ĐẤU</button>
+        </div>
+    </div>
+
+    <!-- MODAL HỒ SƠ -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <div class="profile-card">
+                <div class="profile-avatar"></div>
+                <h2 class="profile-name" id="prof-name">Tên</h2>
+                <div id="prof-admin-tag" style="color: #ff3333; font-weight: bold; margin-bottom: 10px;"></div>
+                
+                <div class="profile-stats">
+                    <div class="stat-box"><div class="stat-val" id="prof-level">1</div><div class="stat-label">Cấp Độ</div></div>
+                    <div class="stat-box"><div class="stat-val" id="prof-rank">0</div><div class="stat-label">Rank</div></div>
+                </div>
+                <div class="profile-stats" style="margin-top: 10px;">
+                    <div class="stat-box"><div class="stat-val" id="prof-kills">0</div><div class="stat-label">Kills</div></div>
+                    <div class="stat-box"><div class="stat-val" id="prof-headshots">0</div><div class="stat-label">Headshots</div></div>
+                </div>
+
+                <div id="admin-actions" style="margin-top: 20px; display: none;">
+                    <button class="ff-btn" style="background: #2196f3;" onclick="adminAction('setAdmin')">CẤP QUYỀN ADMIN</button>
+                    <button class="ff-btn" style="background: #f44336;" onclick="adminAction('ban')">BAN NGƯỜI CHƠI</button>
+                </div>
+            </div>
+            <button class="close-btn" onclick="document.getElementById('profileModal').style.display='none'">Đóng</button>
+        </div>
+    </div>
+
+    <!-- MODAL NHIỆM VỤ -->
+    <div class="modal" id="missionModal">
+        <div class="modal-content" style="width: 600px;">
+            <h2>📋 BẢNG NHIỆM VỤ</h2>
+            <div id="mission-list" style="max-height: 400px; overflow-y: auto; text-align: left;"></div>
+            <button class="close-btn" onclick="document.getElementById('missionModal').style.display='none'">Đóng</button>
+        </div>
+    </div>
+
+    <!-- MODAL BẢNG XẾP HẠNG -->
+    <div class="modal" id="leaderboardModal">
+        <div class="modal-content">
+            <h2>🏆 BẢNG XẾP HẠNG TUẦN</h2>
+            <div id="leaderboard-list" style="max-height: 300px; overflow-y: auto;"></div>
+            <button class="close-btn" onclick="document.getElementById('leaderboardModal').style.display='none'">Đóng</button>
+        </div>
+    </div>
+
+    <!-- MODAL HÒM THƯ -->
+    <div class="modal" id="mailboxModal">
+        <div class="modal-content">
+            <h2>📬 HÒM THƯ</h2>
+            <div id="mailbox-list" style="max-height: 300px; overflow-y: auto;"></div>
+            <button class="close-btn" onclick="document.getElementById('mailboxModal').style.display='none'">Đóng</button>
+        </div>
+    </div>
+
+    <!-- MODAL CHỌN BẢN ĐỒ -->
+    <div class="modal" id="modeModal">
+        <div class="modal-content">
+            <h2>CHỌN BẢN ĐỒ</h2>
+            <div class="mode-card" onclick="startGame('city')"><div><h3 style="margin:0;">🏙️ Thành Phố</h3></div><button class="ff-btn">Chơi</button></div>
+            <div class="mode-card" onclick="startGame('desert')"><div><h3 style="margin:0;">🏜️ Sa Mạc</h3></div><button class="ff-btn">Chơi</button></div>
+            <div class="mode-card" onclick="startGame('map1')"><div><h3 style="margin:0;">🌲 Rừng Xanh</h3></div><button class="ff-btn">Chơi</button></div>
+            <div class="mode-card" onclick="startGame('practice')"><div><h3 style="margin:0;">🎯 Luyện Tập</h3></div><button class="ff-btn" style="background:#4caf50;">Vào</button></div>
+            <button class="close-btn" onclick="document.getElementById('modeModal').style.display='none'">Đóng</button>
+        </div>
+    </div>
+
+    <script>
+        const savedUser = localStorage.getItem('loggedInUser');
+        const isAdmin = localStorage.getItem('userIsAdmin') === 'true';
+        const isRootAdmin = savedUser && savedUser.toLowerCase() === 'admin';
+        let currentProfileTarget = null;
+
+        if (!savedUser) {
+            window.location.href = '/login.html';
+        } else {
+            document.getElementById('display-username').innerText = savedUser + (isAdmin ? " (ADMIN)" : "");
+            document.getElementById('display-username').style.color = isAdmin ? '#ff3333' : 'white';
+            
+            let lvl = localStorage.getItem('userLevel') || 1;
+            let rnk = localStorage.getItem('userRank') || 0;
+            document.getElementById('display-level').innerText = `Lv. ${lvl} | Rank ${rnk}`;
+            document.getElementById('level-up-text').innerText = `LEVEL ${lvl}`;
+
+            if (isRootAdmin && !isAdmin) {
+                document.getElementById('btn-make-admin').style.display = 'block';
+            }
+        }
+
+        let currentGold = parseInt(localStorage.getItem('userGold')) || 1000;
+        let currentDiamonds = parseInt(localStorage.getItem('userDiamonds')) || 500;
+        document.getElementById('gold-display').innerText = currentGold;
+        document.getElementById('diamond-display').innerText = currentDiamonds;
+
+        function logout() {
+            if(confirm("Bạn có chắc muốn đăng xuất không?")) {
+                localStorage.clear();
+                window.location.href = '/login.html';
+            }
+        }
+
+        if (window.location.search.includes('dev=true') && !isRootAdmin) {
+            localStorage.clear();
+            alert("Bạn không có quyền truy cập vào khu vực Phát triển (Dev)!");
+            window.location.href = '/login.html';
+        }
+
+        const socketGlobal = io();
+        socketGlobal.on('forceLogout', (data) => {
+            if (data.username === savedUser) {
+                localStorage.clear();
+                alert(data.reason);
+                window.location.href = '/login.html';
+            }
+        });
+
+        async function makeMeAdmin() {
+            if (!confirm("Bạn có chắc muốn tự cấp quyền Admin?")) return;
+            const res = await fetch('/api/force-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUser: savedUser })
+            });
+            if((await res.json()).success) {
+                localStorage.setItem('userIsAdmin', 'true');
+                alert("Đã cấp quyền Admin! Trang sẽ tự tải lại.");
+                window.location.reload();
+            } else {
+                alert("Lỗi: Không thể cấp quyền. Hãy kiểm tra Server!");
+            }
+        }
+
+        async function openLeaderboard() {
+            document.getElementById('leaderboardModal').style.display = 'flex';
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '<p style="color: #aaa; text-align:center;">Đang tải...</p>';
+            try {
+                const res = await fetch('/api/leaderboard');
+                const data = await res.json();
+                if (data.length === 0) {
+                    leaderboardList.innerHTML = '<p style="color: #aaa; text-align:center;">Chưa có ai trên bảng xếp hạng.</p>';
+                    return;
+                }
+                leaderboardList.innerHTML = ''; 
+                data.forEach((player, index) => {
+                    let medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index+1}.`;
+                    let color = player.name.toLowerCase() === 'admin' ? '#ff3333' : '#fff';
+                    const row = document.createElement('div');
+                    row.className = 'leaderboard-row';
+                    row.innerHTML = `<span style="color:${color}; font-weight: bold;">${medal} ${player.name}</span><span style="color:#ffcc00; font-weight:bold;">${player.kills} Kills</span>`;
+                    row.onclick = function() { viewProfile(player.name); };
+                    leaderboardList.appendChild(row);
+                });
+            } catch (error) { leaderboardList.innerHTML = '<p style="color: red; text-align:center;">Lỗi tải dữ liệu!</p>'; }
+        }
+
+        async function viewProfile(username) {
+            document.getElementById('leaderboardModal').style.display = 'none';
+            currentProfileTarget = username;
+            try {
+                const res = await fetch(`/api/profile/${encodeURIComponent(username)}`);
+                const data = await res.json();
+                if (data.success) {
+                    const p = data.profile;
+                    document.getElementById('prof-name').innerText = p.username;
+                    document.getElementById('prof-name').style.color = p.isAdmin ? '#ff3333' : '#fff';
+                    document.getElementById('prof-admin-tag').innerText = p.isAdmin ? "QUẢN TRỊ VIÊN" : "";
+                    document.getElementById('prof-level').innerText = p.level;
+                    document.getElementById('prof-rank').innerText = p.rank;
+                    document.getElementById('prof-kills').innerText = p.kills;
+                    document.getElementById('prof-headshots').innerText = p.headshots;
+                    if (isRootAdmin) document.getElementById('admin-actions').style.display = 'block';
+                    else document.getElementById('admin-actions').style.display = 'none';
+                    document.getElementById('profileModal').style.display = 'flex';
+                } else { alert("Không tìm thấy hồ sơ!"); }
+            } catch (error) { alert("Lỗi kết nối khi xem hồ sơ!"); }
+        }
+
+        async function adminAction(action) {
+            if (!currentProfileTarget) return;
+            const actionName = action === 'ban' ? 'BAN' : 'CẤP QUYỀN ADMIN';
+            if (!confirm(`Bạn có chắc muốn ${actionName} người chơi ${currentProfileTarget}?`)) return;
+            const res = await fetch('/api/admin-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adminUser: savedUser, targetUser: currentProfileTarget, action: action })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (data.success) document.getElementById('profileModal').style.display = 'none';
+        }
+
+        let createdRoomCode = null;
+        let createdRoomMode = null;
+
+        function openCreateRoomModal() { document.getElementById('createRoomModal').style.display = 'flex'; }
+
+        function confirmCreateRoom(mode) {
+            document.getElementById('createRoomModal').style.display = 'none';
+            createdRoomMode = mode;
+            const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+            createdRoomCode = randomCode;
+            document.getElementById('room-code-display').innerText = randomCode;
+            document.getElementById('roomCodeModal').style.display = 'flex';
+            localStorage.setItem('currentRoom', randomCode);
+            localStorage.setItem('currentMode', mode);
+        }
+
+        function enterCreatedRoom() {
+            if (createdRoomCode && createdRoomMode) window.location.href = `/game.html?mode=${createdRoomMode}&room=${createdRoomCode}`;
+        }
+
+        function joinRoom() {
+            const roomId = document.getElementById('join-room-id').value;
+            if (!roomId) return alert("Vui lòng nhập mã phòng!");
+            window.location.href = `/game.html?mode=map1&room=${roomId}`;
+        }
+
+        function startGamePublic() {
+            localStorage.removeItem('currentRoom');
+            window.location.href = `/game.html?mode=map1&room=public`;
+        }
+
+        const defaultMissions = [
+            { id: 1, title: "Chiến binh tập sự", desc: "Hạ gục 1 người chơi trong trận đấu", rewardGold: 100, rewardDiamond: 0, status: "in_progress" },
+            { id: 2, title: "Xạ thủ thiện xạ", desc: "Hạ gục 5 người chơi", rewardGold: 300, rewardDiamond: 50, status: "in_progress" },
+            { id: 3, title: "Kẻ hủy diệt", desc: "Hạ gục 10 người chơi", rewardGold: 500, rewardDiamond: 100, status: "in_progress" }
+        ];
+
+        function getMissions() {
+            let saved = localStorage.getItem('userMissions');
+            if (!saved) { localStorage.setItem('userMissions', JSON.stringify(defaultMissions)); return defaultMissions; }
+            return JSON.parse(saved);
+        }
+
+        function openMissions() {
+            document.getElementById('missionModal').style.display = 'flex';
+            const missions = getMissions();
+            let html = '';
+            missions.forEach(m => {
+                let btnHtml = ''; let itemClass = '';
+                if (m.status === 'completed') { btnHtml = `<button class="ff-btn" style="background:#4caf50;" onclick="claimMission(${m.id})">NHẬN</button>`; itemClass = 'completed'; } 
+                else if (m.status === 'claimed') { btnHtml = `<button class="ff-btn" style="background:#555;" disabled>ĐÃ NHẬN</button>`; itemClass = 'claimed'; } 
+                else { btnHtml = `<button class="ff-btn" style="background:#555;" disabled>CHƯA XONG</button>`; }
+                let testBtn = m.status === 'in_progress' ? `<button style="font-size:10px; margin-top:5px;" onclick="completeMission(${m.id})">(Test: Đánh dấu xong)</button>` : '';
+                html += `<div class="mission-item ${itemClass}"><div class="mission-text"><h4>${m.title}</h4><p>${m.desc}</p>${testBtn}</div><div style="display:flex; align-items:center;"><div class="mission-reward">${m.rewardGold > 0 ? `💰 ${m.rewardGold}` : ''} ${m.rewardDiamond > 0 ? `💎 ${m.rewardDiamond}` : ''}</div>${btnHtml}</div></div>`;
+            });
+            document.getElementById('mission-list').innerHTML = html;
+        }
+
+        window.completeMission = function(id) {
+            let missions = getMissions(); let m = missions.find(x => x.id === id);
+            if (m) { m.status = 'completed'; localStorage.setItem('userMissions', JSON.stringify(missions)); openMissions(); }
+        };
+
+        window.claimMission = function(id) {
+            let missions = getMissions(); let m = missions.find(x => x.id === id);
+            if (m && m.status === 'completed') {
+                m.status = 'claimed'; localStorage.setItem('userMissions', JSON.stringify(missions));
+                currentGold += m.rewardGold; currentDiamonds += m.rewardDiamond;
+                localStorage.setItem('userGold', currentGold); localStorage.setItem('userDiamonds', currentDiamonds);
+                document.getElementById('gold-display').innerText = currentGold; document.getElementById('diamond-display').innerText = currentDiamonds;
+                alert("Đã nhận thưởng nhiệm vụ!"); openMissions();
+            }
+        };
+
+        function openMailbox() {
+            document.getElementById('mailboxModal').style.display = 'flex';
+            let mailbox = JSON.parse(localStorage.getItem('userMailbox')) || [];
+            let html = mailbox.length === 0 ? "<p>Hòm thư trống.</p>" : '';
+            mailbox.forEach((mail, index) => {
+                html += `<div style="background:#333; padding:15px; margin-bottom:10px; border-radius:5px; text-align:left;"><h4 style="margin:0; color:#ffcc00;">${mail.title}</h4><p style="margin:5px 0;">${mail.content}</p><button class="ff-btn" onclick="claimMail(${index}, ${mail.gold}, ${mail.diamond})">Nhận</button></div>`;
+            });
+            document.getElementById('mailbox-list').innerHTML = html;
+        }
+
+        window.claimMail = function(index, gold, diamond) {
+            let mailbox = JSON.parse(localStorage.getItem('userMailbox')) || [];
+            mailbox.splice(index, 1); localStorage.setItem('userMailbox', JSON.stringify(mailbox));
+            currentGold += gold; currentDiamonds += diamond;
+            localStorage.setItem('userGold', currentGold); localStorage.setItem('userDiamonds', currentDiamonds);
+            document.getElementById('gold-display').innerText = currentGold; document.getElementById('diamond-display').innerText = currentDiamonds;
+            alert("Đã nhận quà!"); openMailbox();
+        }
+
+        function openModeModal() { document.getElementById('modeModal').style.display = 'flex'; }
+        function startGame(mode) { 
+            localStorage.removeItem('currentRoom');
+            window.location.href = `/game.html?mode=${mode}&room=public`; 
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Cửa Hàng Vũ Khí</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { overflow-y: auto !important; background: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop') no-repeat center center fixed; background-size: cover; font-family: 'Roboto', sans-serif; color: white; margin: 0; }
+        .bg-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); z-index: -1; }
+        .shop-container { max-width: 1000px; margin: 40px auto; background: rgba(20, 20, 25, 0.8); padding: 30px; border-radius: 15px; border: 1px solid rgba(255, 204, 0, 0.3); box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); }
+        .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid rgba(255, 255, 255, 0.1); padding-bottom: 20px; }
+        .shop-header h2 { font-family: 'Teko', sans-serif; font-size: 40px; margin: 0; color: #ffcc00; text-shadow: 0 0 10px rgba(255, 204, 0, 0.5); }
+        .weapon-grid { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; }
+        .weapon-card { background: linear-gradient(145deg, #2a2a35, #1a1a20); padding: 20px; border-radius: 12px; width: 280px; text-align: center; border: 1px solid #444; transition: 0.3s; position: relative; overflow: hidden; }
+        .weapon-card:hover { border-color: #ffcc00; transform: translateY(-10px); box-shadow: 0 10px 20px rgba(255, 204, 0, 0.2); }
+        .weapon-img { width: 100%; height: 120px; background: rgba(0,0,0,0.5); border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; border: 1px solid #333; }
+        
+        /* CSS vẽ súng */
+        .pistol { width: 80px; height: 25px; background: #aaa; position: relative; border-radius: 4px; box-shadow: 0 0 10px #fff; }
+        .pistol::after { content: ''; position: absolute; bottom: -20px; left: 10px; width: 20px; height: 25px; background: #888; border-radius: 4px; }
+        
+        .rifle { width: 160px; height: 20px; background: #4a5d23; position: relative; border-radius: 4px; box-shadow: 0 0 10px #4a5d23; }
+        .rifle::after { content: ''; position: absolute; bottom: -20px; left: 30px; width: 25px; height: 30px; background: #333; border-radius: 4px; }
+        .rifle::before { content: ''; position: absolute; top: -8px; right: 30px; width: 40px; height: 12px; background: #222; border-radius: 4px; }
+
+        .sniper { width: 140px; height: 15px; background: #333; position: relative; border-radius: 3px; box-shadow: 0 0 10px #333; }
+        .sniper::after { content: ''; position: absolute; bottom: -15px; left: 40px; width: 15px; height: 20px; background: #444; border-radius: 3px; }
+        .sniper::before { content: ''; position: absolute; top: -10px; right: 20px; width: 40px; height: 10px; background: #111; border-radius: 3px; }
+
+        .bazooka { width: 120px; height: 30px; background: #556b2f; position: relative; border-radius: 10px; box-shadow: 0 0 10px #556b2f; }
+        .bazooka::after { content: ''; position: absolute; top: 5px; right: -10px; width: 20px; height: 20px; background: #111; border-radius: 50%; }
+
+        .weapon-card h3 { font-family: 'Teko', sans-serif; font-size: 28px; margin: 10px 0; letter-spacing: 1px; }
+        .weapon-card p { color: #aaa; font-size: 14px; margin-bottom: 15px; }
+        .price { font-size: 20px; font-weight: bold; color: #ffcc00; margin-bottom: 15px; text-shadow: 0 0 5px #ffcc00; }
+        .game-btn { background: linear-gradient(180deg, #ffeb3b 0%, #ff9800 100%); border: none; border-radius: 8px; color: #000; font-family: 'Teko', sans-serif; font-size: 22px; font-weight: bold; padding: 8px 25px; cursor: pointer; transition: 0.2s; box-shadow: 0 0 15px rgba(255, 152, 0, 0.5); text-transform: uppercase; }
+        .game-btn:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(255, 152, 0, 0.9); }
+        .game-btn:disabled { background: #555; color: #888; box-shadow: none; cursor: not-allowed; transform: none; }
+        .upgrade-section { margin-top: 50px; background: rgba(0, 0, 0, 0.6); padding: 30px; border-radius: 12px; border: 1px solid rgba(0, 255, 0, 0.3); box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1); }
+        .upgrade-section h3 { font-family: 'Teko', sans-serif; font-size: 30px; color: #4caf50; margin-top: 0; text-shadow: 0 0 10px rgba(76, 175, 80, 0.5); }
+        .upgrade-info p { font-size: 18px; margin: 10px 0; }
+        .upgrade-info strong { color: #fff; }
+        .upgrade-btn { background: linear-gradient(180deg, #00bcd4 0%, #2196f3 100%); border: none; border-radius: 8px; color: white; font-family: 'Teko', sans-serif; font-size: 24px; font-weight: bold; padding: 10px 30px; cursor: pointer; transition: 0.2s; margin-top: 15px; box-shadow: 0 0 15px rgba(33, 150, 243, 0.5); }
+        .upgrade-btn:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(33, 150, 243, 0.9); }
+    </style>
+</head>
+<body>
+    <div class="bg-overlay"></div>
+    <div class="shop-container">
+        <div class="shop-header">
+            <h2>🔫 CỬA HÀNG VŨ KHÍ</h2>
+            <h3 style="color: #ffcc00; font-size: 24px; margin: 0;">💰 Vàng: <span id="gold-amount">0</span></h3>
+            <button class="game-btn" style="background: linear-gradient(180deg, #f44336 0%, #b71c1c 100%); color: white; box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);" onclick="window.location.href='/'">Thoát</button>
+        </div>
+        <div class="weapon-grid">
+            <div class="weapon-card">
+                <div class="weapon-img"><div class="pistol"></div></div>
+                <h3>SÚNG LỤC</h3>
+                <p>Sát thương: 25 | Tốc độ: Nhanh</p>
+                <div class="price">100 VÀNG</div>
+                <button class="game-btn" id="btn-pistol" onclick="buyWeapon('pistol', 100)">Mua</button>
+            </div>
+            <div class="weapon-card">
+                <div class="weapon-img"><div class="rifle"></div></div>
+                <h3>SÚNG TRƯỜNG</h3>
+                <p>Sát thương: 35 | Tốc độ: Trung bình</p>
+                <div class="price">200 VÀNG</div>
+                <button class="game-btn" id="btn-rifle" onclick="buyWeapon('rifle', 200)">Mua</button>
+            </div>
+            <div class="weapon-card">
+                <div class="weapon-img"><div class="sniper"></div></div>
+                <h3>SÚNG TỈA</h3>
+                <p>Sát thương: 100 | Tốc độ: Rất chậm</p>
+                <div class="price">300 VÀNG</div>
+                <button class="game-btn" id="btn-sniper" onclick="buyWeapon('sniper', 300)">Mua</button>
+            </div>
+            <div class="weapon-card">
+                <div class="weapon-img"><div class="bazooka"></div></div>
+                <h3>BAZOOKA</h3>
+                <p>Sát thương: 150 | Diện rộng</p>
+                <div class="price">500 VÀNG</div>
+                <button class="game-btn" id="btn-bazooka" onclick="buyWeapon('bazooka', 500)">Mua</button>
+            </div>
+        </div>
+        <div class="upgrade-section">
+            <h3>🔧 NÂNG CẤP VŨ KHÍ</h3>
+            <div class="upgrade-info">
+                <p>Súng hiện tại: <strong id="current-weapon-name">Chưa có</strong> (Cấp <span id="current-weapon-level">0</span>)</p>
+                <p>Sát thương cơ bản: <strong id="current-weapon-damage">0</strong></p>
+                <p style="color: #ffaa00; font-size: 14px; font-style: italic;">* Mỗi cấp nâng cấp tăng thêm 5 sát thương.</p>
+                <p style="color: #4caf50; font-size: 20px; font-weight: bold;">Giá nâng cấp: <span id="upgrade-cost">50</span> Vàng</p>
+            </div>
+            <button class="upgrade-btn" onclick="upgradeWeapon()">NÂNG CẤP NGAY</button>
+        </div>
+    </div>
+    <script>
+        const username = localStorage.getItem('loggedInUser');
+        let gold = parseInt(localStorage.getItem('userGold')) || 1000;
+        let ownedWeapons = JSON.parse(localStorage.getItem('userOwnedWeapons')) || ['pistol'];
+        let currentWeapon = localStorage.getItem('userCurrentWeapon') || 'pistol';
+        let weaponLevels = JSON.parse(localStorage.getItem('userWeaponLevels')) || { pistol: 1, rifle: 1, sniper: 1, bazooka: 1 };
+
+        function saveToServer() {
+            localStorage.setItem('userGold', gold);
+            localStorage.setItem('userOwnedWeapons', JSON.stringify(ownedWeapons));
+            localStorage.setItem('userCurrentWeapon', currentWeapon);
+            localStorage.setItem('userWeaponLevels', JSON.stringify(weaponLevels));
+
+            fetch('/api/update-inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, gold, ownedWeapons, currentWeapon, weaponLevels })
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('gold-amount').innerText = gold;
+            const weapons = ['pistol', 'rifle', 'sniper', 'bazooka'];
+            weapons.forEach(w => {
+                const btn = document.getElementById('btn-' + w);
+                if (ownedWeapons.includes(w)) {
+                    btn.innerText = currentWeapon === w ? 'ĐANG DÙNG' : 'TRANG BỊ';
+                    btn.disabled = currentWeapon === w;
+                } else {
+                    btn.innerText = 'Mua';
+                    btn.disabled = false;
+                }
+            });
+
+            if (currentWeapon) {
+                let wpName = "SÚNG LỤC";
+                let baseDmg = 25;
+                if (currentWeapon === 'rifle') { wpName = "SÚNG TRƯỜNG"; baseDmg = 35; }
+                if (currentWeapon === 'sniper') { wpName = "SÚNG TỈA"; baseDmg = 100; }
+                if (currentWeapon === 'bazooka') { wpName = "BAZOOKA"; baseDmg = 150; }
+                
+                document.getElementById('current-weapon-name').innerText = wpName;
+                document.getElementById('current-weapon-level').innerText = weaponLevels[currentWeapon];
+                document.getElementById('current-weapon-damage').innerText = baseDmg + (weaponLevels[currentWeapon] - 1) * 5;
+                document.getElementById('upgrade-cost').innerText = weaponLevels[currentWeapon] * 50;
+            }
+        }
+
+        function buyWeapon(type, cost) {
+            if (ownedWeapons.includes(type)) {
+                currentWeapon = type;
+            } else {
+                if (gold >= cost) {
+                    gold -= cost;
+                    ownedWeapons.push(type);
+                    currentWeapon = type;
+                } else { alert('Bạn không đủ vàng!'); return; }
+            }
+            saveToServer(); updateUI();
+        }
+
+        function upgradeWeapon() {
+            if (!currentWeapon) { alert('Vui lòng mua và trang bị một khẩu súng trước!'); return; }
+            let cost = weaponLevels[currentWeapon] * 50;
+            if (gold >= cost) {
+                gold -= cost;
+                weaponLevels[currentWeapon]++;
+                saveToServer(); updateUI();
+            } else { alert('Bạn không đủ vàng để nâng cấp!'); }
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
