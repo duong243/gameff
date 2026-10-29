@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng Nhập - Game Bắn Súng</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070') no-repeat center center fixed; background-size: cover; font-family: 'Roboto', sans-serif; }
+        .login-box { background: rgba(0,0,0,0.85); padding: 40px; border-radius: 15px; width: 350px; border: 2px solid #ff9800; box-shadow: 0 0 30px rgba(255, 152, 0, 0.3); color: white; backdrop-filter: blur(10px); }
+        h2 { text-align: center; color: #ffcc00; font-family: 'Teko', sans-serif; font-size: 40px; margin-top: 0; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; background: rgba(255,255,255,0.1); border: 1px solid #555; border-radius: 5px; color: white; font-size: 16px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; margin-top: 20px; background: linear-gradient(180deg, #ffeb3b 0%, #ff9800 100%); border: none; border-radius: 8px; font-size: 20px; font-weight: bold; font-family: 'Teko', sans-serif; cursor: pointer; transition: 0.2s; }
+        button:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(255, 152, 0, 0.6); }
+        .toggle-text { text-align: center; margin-top: 20px; font-size: 14px; color: #aaa; cursor: pointer; }
+        .toggle-text:hover { color: white; }
+        .error-msg { color: #ff3333; text-align: center; margin-top: 10px; font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2 id="form-title">ĐĂNG NHẬP</h2>
+        <input type="text" id="username" placeholder="Tên tài khoản...">
+        <input type="password" id="password" placeholder="Mật khẩu...">
+        <button onclick="submitForm()">XÁC NHẬN</button>
+        <div class="error-msg" id="error-msg"></div>
+        <div class="toggle-text" id="toggle-btn" onclick="toggleMode()">Chưa có tài khoản? Đăng ký ngay</div>
+    </div>
+
+    <script>
+        window.onload = async () => {
+            const savedUser = localStorage.getItem('loggedInUser');
+            if (savedUser) {
+                const res = await fetch(`/api/check-ban/${savedUser}`);
+                const data = await res.json();
+                if (data.banned) {
+                    localStorage.clear();
+                    alert("Tài khoản của bạn đã bị khóa bởi Admin!");
+                }
+            }
+        };
+
+        let isLogin = true;
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            document.getElementById('form-title').innerText = isLogin ? "ĐĂNG NHẬP" : "ĐĂNG KÝ";
+            document.getElementById('toggle-btn').innerText = isLogin ? "Chưa có tài khoản? Đăng ký ngay" : "Đã có tài khoản? Đăng nhập";
+            document.getElementById('error-msg').style.display = 'none';
+        }
+
+        async function submitForm() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+            
+            if (!username || !password) {
+                errorMsg.innerText = "Vui lòng nhập đủ thông tin!";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const url = isLogin ? '/api/login' : '/api/register';
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                errorMsg.style.display = 'none';
+                if (isLogin) {
+                    localStorage.setItem('loggedInUser', data.userData.username);
+                    localStorage.setItem('userIsAdmin', data.userData.isAdmin);
+                    localStorage.setItem('userGold', data.userData.gold);
+                    localStorage.setItem('userDiamonds', data.userData.diamonds);
+                    localStorage.setItem('userLevel', data.userData.level);
+                    localStorage.setItem('userRank', data.userData.rank);
+                    localStorage.setItem('userOwnedWeapons', JSON.stringify(data.userData.ownedWeapons));
+                    localStorage.setItem('userCurrentWeapon', data.userData.currentWeapon);
+                    localStorage.setItem('userWeaponLevels', JSON.stringify(data.userData.weaponLevels));
+                    localStorage.setItem('userMailbox', JSON.stringify(data.userData.mailbox));
+                    window.location.href = '/';
+                } else {
+                    toggleMode(); 
+                    errorMsg.innerText = "Đăng ký thành công! Hãy đăng nhập.";
+                    errorMsg.style.color = "#00ff00";
+                    errorMsg.style.display = 'block';
+                }
+            } else {
+                errorMsg.innerText = data.message;
+                errorMsg.style.color = "#ff3333";
+                errorMsg.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

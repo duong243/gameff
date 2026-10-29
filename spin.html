@@ -1,0 +1,122 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Vòng Quay May Mắn</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { overflow: hidden !important; background: radial-gradient(circle, #1a1a24, #0a0a0f); color: white; font-family: 'Roboto', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .header { position: absolute; top: 20px; left: 30px; right: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-family: 'Teko', sans-serif; font-size: 40px; margin: 0; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .currency-display { font-family: 'Teko', sans-serif; font-size: 32px; font-weight: bold; color: #00ffff; text-shadow: 0 0 15px #00ffff; display: flex; align-items: center; gap: 10px; }
+        .wheel-container { position: relative; width: 500px; height: 500px; margin-top: 40px; }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; border: 12px solid #ffcc00; position: relative; overflow: hidden; transition: transform 5s cubic-bezier(0.1, 0.7, 0.1, 1); box-shadow: 0 0 40px rgba(255, 204, 0, 0.6), inset 0 0 20px rgba(0,0,0,0.8); }
+        .wheel::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: conic-gradient(#ff4d4d 0deg 45deg, #4d4dff 45deg 90deg, #4dff4d 90deg 135deg, #ffff4d 135deg 180deg, #ff4d4d 180deg 225deg, #4d4dff 225deg 270deg, #4dff4d 270deg 315deg, #ffff4d 315deg 360deg); }
+        .wheel-text { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+        .wheel-text span { position: absolute; left: 50%; top: 50%; transform-origin: 0 0; font-family: 'Teko', sans-serif; font-size: 22px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); white-space: nowrap; }
+        .pointer { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 30px solid transparent; border-right: 30px solid transparent; border-top: 60px solid #ffcc00; z-index: 10; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8)); }
+        .center-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 120px; height: 120px; background: radial-gradient(circle, #ffeb3b, #ff9800); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; z-index: 5; border: 6px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.8); font-family: 'Teko', sans-serif; font-size: 30px; font-weight: bold; color: #000; text-shadow: 1px 1px 0px rgba(255,255,255,0.5); transition: 0.2s; }
+        .center-btn span { font-size: 18px; color: #d32f2f; }
+        .center-btn:hover { transform: translate(-50%, -50%) scale(1.05); }
+        .center-btn:disabled { background: #555; cursor: not-allowed; transform: translate(-50%, -50%); color: #888; }
+        .back-btn { margin-top: 60px; padding: 15px 50px; background: linear-gradient(180deg, #f44336 0%, #b71c1c 100%); border: none; border-radius: 10px; color: white; font-family: 'Teko', sans-serif; font-size: 28px; cursor: pointer; box-shadow: 0 0 20px rgba(244, 67, 54, 0.6); transition: 0.2s; }
+        .back-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(244, 67, 54, 0.9); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>VÒNG QUAY MAY MẮN</h1>
+        <div class="currency-display">💎 KIM CƯƠNG: <span id="diamond-amount">0</span></div>
+    </div>
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel"><div class="wheel-text" id="wheel-text"></div></div>
+        <div class="center-btn" id="spin-btn" onclick="spin()">QUAY<span>50 💎</span></div>
+    </div>
+    <button class="back-btn" onclick="window.location.href='/'">Quay Lại Sảnh Chờ</button>
+    <script>
+        const prizes = [
+            { name: "100 Vàng", type: "gold", value: 100 },
+            { name: "500 Vàng", type: "gold", value: 500 },
+            { name: "Súng Trường", type: "weapon", value: "rifle" },
+            { name: "Súng Lục", type: "weapon", value: "pistol" },
+            { name: "Chúc may mắn", type: "none", value: 0 },
+            { name: "50 Vàng", type: "gold", value: 50 },
+            { name: "1000 Vàng", type: "gold", value: 1000 },
+            { name: "100 Kim Cương", type: "diamond", value: 100 }
+        ];
+
+        let diamonds = parseInt(localStorage.getItem('userDiamonds')) || 500; 
+        let gold = parseInt(localStorage.getItem('userGold')) || 1000;
+        let ownedWeapons = JSON.parse(localStorage.getItem('userOwnedWeapons')) || ['pistol'];
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        const wheelText = document.getElementById('wheel-text');
+        prizes.forEach((prize, index) => {
+            const span = document.createElement('span');
+            span.innerText = prize.name;
+            const angle = index * 45 + 22.5; 
+            span.style.transform = `rotate(${angle}deg) translate(170px, -50%)`;
+            wheelText.appendChild(span);
+        });
+
+        function updateUI() {
+            document.getElementById('diamond-amount').innerText = diamonds;
+            localStorage.setItem('userDiamonds', diamonds);
+        }
+
+        function spin() {
+            if (isSpinning) return;
+            if (diamonds < 50) { alert("Bạn không đủ 50 Kim cương để quay!"); return; }
+
+            isSpinning = true;
+            diamonds -= 50;
+            updateUI();
+            document.getElementById('spin-btn').disabled = true;
+
+            const winIndex = Math.floor(Math.random() * prizes.length);
+            const prize = prizes[winIndex];
+            const targetAngle = (360 - (winIndex * 45)) % 360;
+            const totalRotation = 1800 + targetAngle + (360 - (currentRotation % 360));
+            
+            currentRotation += totalRotation;
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                document.getElementById('spin-btn').disabled = false;
+                givePrize(prize);
+            }, 5100);
+        }
+
+        function givePrize(prize) {
+            if (prize.type === "gold") {
+                gold += prize.value;
+                localStorage.setItem('userGold', gold);
+                alert(`🎉 Chúc mừng! Bạn nhận được ${prize.value} Vàng!`);
+            } 
+            else if (prize.type === "diamond") {
+                diamonds += prize.value;
+                updateUI();
+                alert(`🎉 Cực phẩm! Bạn nhận được ${prize.value} Kim Cương!`);
+            }
+            else if (prize.type === "weapon") {
+                if (!ownedWeapons.includes(prize.value)) {
+                    ownedWeapons.push(prize.value);
+                    localStorage.setItem('userOwnedWeapons', JSON.stringify(ownedWeapons));
+                    alert(`🎉 Bạn nhận được ${prize.name}! Hãy vào Cửa hàng để trang bị.`);
+                } else {
+                    gold += (prize.value === 'rifle' ? 200 : 100);
+                    localStorage.setItem('userGold', gold);
+                    alert(`Bạn đã có ${prize.name}, nhận bù ${prize.value === 'rifle' ? 200 : 100} Vàng!`);
+                }
+            }
+            else { alert("Chúc bạn may mắn lần sau!"); }
+        }
+        updateUI();
+    </script>
+</body>
+</html>
