@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -78,7 +78,8 @@
                 <div class="mode-title">BATTLE ROYALE</div>
                 <div class="mode-map">Bermuda</div>
             </div>
-            <button class="start-btn" onclick="startGamePublic()">
+            <!-- NÚT START ĐÃ SỬA ĐỂ MỞ BẢNG CHỌN CHẾ ĐỘ -->
+            <button class="start-btn" onclick="openModeModal()">
                 <span class="start-icon">🎮</span>
                 <span class="start-text">START</span>
             </button>
@@ -168,6 +169,8 @@
             <div class="mode-card" onclick="startGame('desert')"><div><h3 style="margin:0;">🏜️ Sa Mạc</h3></div><button class="ff-btn">Chơi</button></div>
             <div class="mode-card" onclick="startGame('map1')"><div><h3 style="margin:0;">🌲 Rừng Xanh</h3></div><button class="ff-btn">Chơi</button></div>
             <div class="mode-card" onclick="startGame('practice')"><div><h3 style="margin:0;">🎯 Luyện Tập</h3></div><button class="ff-btn" style="background:#4caf50;">Vào</button></div>
+            <!-- NÚT SINH TỒN -->
+            <div class="mode-card" onclick="startGame('campaign')"><div><h3 style="margin:0;">⚔️ Sinh Tồn</h3><p style="margin:5px 0 0 0; color:#aaa;">Chiến đấu với quái vật từ Map 1 đến 100</p></div><button class="ff-btn" style="background:#f44336;">Vào</button></div>
             <button class="close-btn" onclick="document.getElementById('modeModal').style.display='none'">Đóng</button>
         </div>
     </div>
@@ -321,11 +324,6 @@
             const roomId = document.getElementById('join-room-id').value;
             if (!roomId) return alert("Vui lòng nhập mã phòng!");
             window.location.href = `/game.html?mode=map1&room=${roomId}`;
-        }
-
-        function startGamePublic() {
-            localStorage.removeItem('currentRoom');
-            window.location.href = `/game.html?mode=map1&room=public`;
         }
 
         const defaultMissions = [
