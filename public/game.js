@@ -96,7 +96,7 @@ function init() {
 }
 
 // ==========================================
-// CHẾ ĐỘ SINH TỒN
+// CHẾ ĐỘ SINH TỒN (TỐI ƯU HÓA)
 // ==========================================
 function buildCampaignMap() {
     for (let i = scene.children.length - 1; i >= 0; i--) {
@@ -107,7 +107,8 @@ function buildCampaignMap() {
     scene.background = new THREE.Color(0x2c3e50);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: 0x444444 }));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
-    for (let i = 0; i < 20; i++) {
+    // Chỉ tạo 10 bức tường để đỡ lag
+    for (let i = 0; i < 10; i++) {
         const wall = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshLambertMaterial({ color: 0x555555 }));
         wall.position.set((Math.random() - 0.5) * 800, 20, (Math.random() - 0.5) * 800);
         scene.add(wall); objects.push(wall);
@@ -123,23 +124,37 @@ function startCampaignLevel(level) {
     for (let i = 0; i < MONSTERS_PER_MAP; i++) createMonster(level);
 }
 
+// TẠO QUÁI VẬT ĐƠN GIẢN (CHỈ 1 KHỐI HỘP ĐỂ ĐỠ LAG)
 function createMonster(level) {
     const isBoss = level % 5 === 0;
     const monsterColor = isBoss ? 0xff0000 : 0x00ff00;
-    const monsterChar = createCharacter(monsterColor, isBoss ? "BOSS" : `Quái Map ${level}`, false);
-    monsterChar.group.position.set((Math.random() - 0.5) * 200, FEET_LEVEL, (Math.random() - 0.5) * 200);
-    monsterChar.group.userData.playerId = "npc_" + Math.random();
-    monsterChar.group.userData.isNPC = true;
-    monsterChar.group.userData.hp = (isBoss ? 200 : 50) + level * 20;
-    monsterChar.group.userData.maxHp = monsterChar.group.userData.hp;
-    monsterChar.group.userData.isBoss = isBoss;
-    monsterChar.group.userData.level = level;
-    monsterChar.healthBar = createHealthBar();
-    scene.add(monsterChar.group); playersMeshes.push(monsterChar.group); npcs.push(monsterChar);
+    
+    const group = new THREE.Group();
+    const monsterMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(15, 30, 15), 
+        new THREE.MeshLambertMaterial({ color: monsterColor })
+    );
+    monsterMesh.position.y = 15;
+    group.add(monsterMesh);
+    
+    group.position.set((Math.random() - 0.5) * 200, FEET_LEVEL, (Math.random() - 0.5) * 200);
+    group.userData.playerId = "npc_" + Math.random();
+    group.userData.isNPC = true;
+    group.userData.hp = (isBoss ? 200 : 50) + level * 20;
+    group.userData.maxHp = group.userData.hp;
+    group.userData.isBoss = isBoss;
+    group.userData.level = level;
+    group.userData.nameElement = null; // Không tạo tên cho quái để đỡ nặng
+    
+    // Thanh máu cho quái
+    const healthBar = createHealthBar();
+    scene.add(group); 
+    playersMeshes.push(group); 
+    npcs.push({ group: group, healthBar: healthBar });
 }
 
 // ==========================================
-// MULTIPLAYER MAP (ĐÃ TỐI ƯU & THÊM TÁN LÁ)
+// MULTIPLAYER MAP (TỐI ƯU HÓA)
 // ==========================================
 function buildMultiplayerMap() {
     let floorColor = 0x55aa55;
@@ -147,19 +162,17 @@ function buildMultiplayerMap() {
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: floorColor }));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
     
-    // Chỉ tạo 40 cây thay vì 100 cây để đỡ lag
-    for (let i = 0; i < 40; i++) {
-        // Thân cây
+    // Giảm số cây xuống 30 để đỡ lag
+    for (let i = 0; i < 30; i++) {
         const treeGroup = new THREE.Group();
         const trunk = new THREE.Mesh(new THREE.CylinderGeometry(2, 3, 30, 6), new THREE.MeshLambertMaterial({ color: 0x8B4513 }));
         trunk.position.y = 15; treeGroup.add(trunk);
-        // Tán lá
         const leaves = new THREE.Mesh(new THREE.ConeGeometry(15, 30, 6), new THREE.MeshLambertMaterial({ color: 0x228B22 }));
         leaves.position.y = 35; treeGroup.add(leaves);
         
         treeGroup.position.set((Math.random()-0.5)*1000, 0, (Math.random()-0.5)*1000); 
         scene.add(treeGroup); 
-        // Thêm hitbox cho cây
+        
         const hitBox = new THREE.Mesh(new THREE.BoxGeometry(6, 30, 6), new THREE.MeshBasicMaterial({visible: false}));
         hitBox.position.set(treeGroup.position.x, 15, treeGroup.position.z); 
         scene.add(hitBox); objects.push(hitBox);
@@ -167,7 +180,7 @@ function buildMultiplayerMap() {
 }
 
 // ==========================================
-// HÀM SHOOT
+// HÀM SHOOT (TỐI ƯU HÓA HIỆU ỨNG)
 // ==========================================
 function shoot() {
     if (shootCooldown > 0) return; 
@@ -216,9 +229,7 @@ function shoot() {
             const hm = document.getElementById('hitmarker');
             if (hm) { hm.style.opacity = '1'; hm.style.color = isHeadshot ? 'yellow' : 'red'; hm.innerText = isHeadshot ? "☠" : "X"; setTimeout(() => { hm.style.opacity = '0'; }, 100); }
         }
-        const sparkGeo = new THREE.BoxGeometry(1, 1, 1); const sparkMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-        const spark = new THREE.Mesh(sparkGeo, sparkMat); spark.position.copy(hitPoint); scene.add(spark);
-        setTimeout(() => { scene.remove(spark); sparkGeo.dispose(); sparkMat.dispose(); }, 200);
+        // Bỏ hiệu ứng tia lửa để đỡ lag
     }
 }
 
@@ -465,6 +476,7 @@ function animate() {
 
     npcs.forEach(npc => {
         if (npc.group.userData.hp > 0) {
+            // Quái xoay về phía người chơi
             npc.group.rotation.y = Math.atan2(playerGroup.position.x - npc.group.position.x, playerGroup.position.z - npc.group.position.z);
         }
     });
