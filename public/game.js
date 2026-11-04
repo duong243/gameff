@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
 const socket = io();
@@ -23,10 +23,12 @@ const GROUND_LEVEL = 65; const FEET_LEVEL = 25; const MAP_BOUNDARY = 700;
 let raycaster = new THREE.Raycaster(); let shootCooldown = 0; let audioCtx; let gunKickback = 0;
 let otherPlayers = {}; const MOUSE_SENSITIVITY = 1.0; const PLAYER_SPEED = 160;
 
+// BIẾN CHẾ ĐỘ SINH TỒN
 let currentMapLevel = 1;
 let currentMonsterKills = 0;
 const MONSTERS_PER_MAP = 5;
 
+// BIẾN CHAT & KÉO THẢ
 let chatBox = document.getElementById('chat-container');
 let isDragging = false; let dragOffsetX = 0; let dragOffsetY = 0;
 
@@ -137,16 +139,30 @@ function createMonster(level) {
 }
 
 // ==========================================
-// MULTIPLAYER MAP
+// MULTIPLAYER MAP (ĐÃ TỐI ƯU & THÊM TÁN LÁ)
 // ==========================================
 function buildMultiplayerMap() {
     let floorColor = 0x55aa55;
     scene.background = new THREE.Color(0x87CEEB);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: floorColor }));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
-    for (let i = 0; i < 100; i++) {
-        const tree = new THREE.Mesh(new THREE.CylinderGeometry(2, 3, 30, 6), new THREE.MeshLambertMaterial({ color: 0x8B4513 }));
-        tree.position.set((Math.random()-0.5)*1000, 15, (Math.random()-0.5)*1000); scene.add(tree); objects.push(tree);
+    
+    // Chỉ tạo 40 cây thay vì 100 cây để đỡ lag
+    for (let i = 0; i < 40; i++) {
+        // Thân cây
+        const treeGroup = new THREE.Group();
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(2, 3, 30, 6), new THREE.MeshLambertMaterial({ color: 0x8B4513 }));
+        trunk.position.y = 15; treeGroup.add(trunk);
+        // Tán lá
+        const leaves = new THREE.Mesh(new THREE.ConeGeometry(15, 30, 6), new THREE.MeshLambertMaterial({ color: 0x228B22 }));
+        leaves.position.y = 35; treeGroup.add(leaves);
+        
+        treeGroup.position.set((Math.random()-0.5)*1000, 0, (Math.random()-0.5)*1000); 
+        scene.add(treeGroup); 
+        // Thêm hitbox cho cây
+        const hitBox = new THREE.Mesh(new THREE.BoxGeometry(6, 30, 6), new THREE.MeshBasicMaterial({visible: false}));
+        hitBox.position.set(treeGroup.position.x, 15, treeGroup.position.z); 
+        scene.add(hitBox); objects.push(hitBox);
     }
 }
 
