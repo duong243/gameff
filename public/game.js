@@ -23,12 +23,10 @@ const GROUND_LEVEL = 65; const FEET_LEVEL = 25; const MAP_BOUNDARY = 700;
 let raycaster = new THREE.Raycaster(); let shootCooldown = 0; let audioCtx; let gunKickback = 0;
 let otherPlayers = {}; const MOUSE_SENSITIVITY = 1.0; const PLAYER_SPEED = 160;
 
-// BIẾN CHẾ ĐỘ SINH TỒN
 let currentMapLevel = 1;
 let currentMonsterKills = 0;
 const MONSTERS_PER_MAP = 5;
 
-// BIẾN CHAT & KÉO THẢ
 let chatBox = document.getElementById('chat-container');
 let isDragging = false; let dragOffsetX = 0; let dragOffsetY = 0;
 
@@ -39,8 +37,9 @@ animate();
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
-    light.position.set(0, 200, 0); scene.add(light);
+    // Ánh sáng đơn giản nhất để đỡ lag
+    const light = new THREE.AmbientLight(0xffffff, 1.5); 
+    scene.add(light);
 
     if (gameMode === 'campaign') {
         buildCampaignMap();
@@ -54,7 +53,7 @@ function init() {
     playerGroup.userData.playerId = socket.id; 
     playerGroup.userData.hp = 100;
 
-    const fpsGun = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 8), new THREE.MeshLambertMaterial({ color: 0x555555 }));
+    const fpsGun = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 8), new THREE.MeshBasicMaterial({ color: 0x555555 }));
     fpsGun.position.set(2, -1.5, -3); camera.add(fpsGun); scene.add(camera); window.fpsGun = fpsGun; 
 
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -80,8 +79,10 @@ function init() {
         document.addEventListener('mouseup', stopDrag);
     }
 
+    // Tắt khử răng cưa và hạ độ phân giải để tăng FPS
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-    renderer.setPixelRatio(1); renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(0.8); 
+    renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
     if (gameMode === 'campaign') {
@@ -96,21 +97,21 @@ function init() {
 }
 
 // ==========================================
-// CHẾ ĐỘ SINH TỒN (TỐI ƯU HÓA)
+// CHẾ ĐỘ SINH TỒN (TỐI ƯU HÓA TỐI ĐA)
 // ==========================================
 function buildCampaignMap() {
     for (let i = scene.children.length - 1; i >= 0; i--) {
         let obj = scene.children[i];
-        if (obj.type !== 'PerspectiveCamera' && obj.type !== 'HemisphereLight' && obj !== playerGroup) scene.remove(obj);
+        if (obj.type !== 'PerspectiveCamera' && obj.type !== 'AmbientLight' && obj !== playerGroup) scene.remove(obj);
     }
     objects = []; npcs = [];
     scene.background = new THREE.Color(0x2c3e50);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: 0x444444 }));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
-    // Chỉ tạo 10 bức tường để đỡ lag
-    for (let i = 0; i < 10; i++) {
+    // Chỉ tạo 5 bức tường để đỡ lag
+    for (let i = 0; i < 5; i++) {
         const wall = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshLambertMaterial({ color: 0x555555 }));
-        wall.position.set((Math.random() - 0.5) * 800, 20, (Math.random() - 0.5) * 800);
+        wall.position.set((Math.random() - 0.5) * 400, 20, (Math.random() - 0.5) * 400);
         scene.add(wall); objects.push(wall);
     }
 }
@@ -124,29 +125,28 @@ function startCampaignLevel(level) {
     for (let i = 0; i < MONSTERS_PER_MAP; i++) createMonster(level);
 }
 
-// TẠO QUÁI VẬT ĐƠN GIẢN (CHỈ 1 KHỐI HỘP ĐỂ ĐỠ LAG)
+// TẠO QUÁI VẬT ĐƠN GIẢN NHẤT (CHỈ 1 KHỐI HỘP)
 function createMonster(level) {
     const isBoss = level % 5 === 0;
     const monsterColor = isBoss ? 0xff0000 : 0x00ff00;
     
     const group = new THREE.Group();
     const monsterMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(15, 30, 15), 
-        new THREE.MeshLambertMaterial({ color: monsterColor })
+        new THREE.BoxGeometry(20, 30, 20), 
+        new THREE.MeshBasicMaterial({ color: monsterColor })
     );
     monsterMesh.position.y = 15;
     group.add(monsterMesh);
     
-    group.position.set((Math.random() - 0.5) * 200, FEET_LEVEL, (Math.random() - 0.5) * 200);
+    group.position.set((Math.random() - 0.5) * 150, FEET_LEVEL, (Math.random() - 0.5) * 150);
     group.userData.playerId = "npc_" + Math.random();
     group.userData.isNPC = true;
     group.userData.hp = (isBoss ? 200 : 50) + level * 20;
     group.userData.maxHp = group.userData.hp;
     group.userData.isBoss = isBoss;
     group.userData.level = level;
-    group.userData.nameElement = null; // Không tạo tên cho quái để đỡ nặng
+    group.userData.nameElement = null; 
     
-    // Thanh máu cho quái
     const healthBar = createHealthBar();
     scene.add(group); 
     playersMeshes.push(group); 
@@ -162,15 +162,15 @@ function buildMultiplayerMap() {
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: floorColor }));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
     
-    // Giảm số cây xuống 30 để đỡ lag
-    for (let i = 0; i < 30; i++) {
+    // Chỉ tạo 10 cây để đỡ lag
+    for (let i = 0; i < 10; i++) {
         const treeGroup = new THREE.Group();
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(2, 3, 30, 6), new THREE.MeshLambertMaterial({ color: 0x8B4513 }));
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(2, 3, 30, 4), new THREE.MeshBasicMaterial({ color: 0x8B4513 }));
         trunk.position.y = 15; treeGroup.add(trunk);
-        const leaves = new THREE.Mesh(new THREE.ConeGeometry(15, 30, 6), new THREE.MeshLambertMaterial({ color: 0x228B22 }));
+        const leaves = new THREE.Mesh(new THREE.ConeGeometry(15, 30, 4), new THREE.MeshBasicMaterial({ color: 0x228B22 }));
         leaves.position.y = 35; treeGroup.add(leaves);
         
-        treeGroup.position.set((Math.random()-0.5)*1000, 0, (Math.random()-0.5)*1000); 
+        treeGroup.position.set((Math.random()-0.5)*500, 0, (Math.random()-0.5)*500); 
         scene.add(treeGroup); 
         
         const hitBox = new THREE.Mesh(new THREE.BoxGeometry(6, 30, 6), new THREE.MeshBasicMaterial({visible: false}));
@@ -180,7 +180,7 @@ function buildMultiplayerMap() {
 }
 
 // ==========================================
-// HÀM SHOOT (TỐI ƯU HÓA HIỆU ỨNG)
+// HÀM SHOOT (BỎ HIỆU ỨNG TIA LỬA)
 // ==========================================
 function shoot() {
     if (shootCooldown > 0) return; 
@@ -229,7 +229,6 @@ function shoot() {
             const hm = document.getElementById('hitmarker');
             if (hm) { hm.style.opacity = '1'; hm.style.color = isHeadshot ? 'yellow' : 'red'; hm.innerText = isHeadshot ? "☠" : "X"; setTimeout(() => { hm.style.opacity = '0'; }, 100); }
         }
-        // Bỏ hiệu ứng tia lửa để đỡ lag
     }
 }
 
@@ -282,13 +281,13 @@ function drag(e) {
 function stopDrag() { isDragging = false; }
 
 // ==========================================
-// CÁC HÀM CƠ BẢN KHÁC
+// CÁC HÀM CƠ BẢN KHÁC (TỐI GIẢN)
 // ==========================================
 function createCharacter(color, name = "", isAdmin = false) {
     const group = new THREE.Group();
-    const skinMat = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
-    const shirtMat = new THREE.MeshLambertMaterial({ color: color }); 
-    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+    const skinMat = new THREE.MeshBasicMaterial({ color: 0xffcc99 });
+    const shirtMat = new THREE.MeshBasicMaterial({ color: color }); 
+    const pantsMat = new THREE.MeshBasicMaterial({ color: 0x333333 });
 
     const head = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 8), skinMat);
     head.position.set(0, 13, 0); head.userData.isHead = true; group.add(head);
@@ -299,7 +298,7 @@ function createCharacter(color, name = "", isAdmin = false) {
     const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(3.5, 10, 3.5), pantsMat); leftLeg.position.set(-2.2, -7, 0); group.add(leftLeg);
     const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(3.5, 10, 3.5), pantsMat); rightLeg.position.set(2.2, -7, 0); group.add(rightLeg);
 
-    let gunMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+    let gunMat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa });
     let gun = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 6), gunMat);
     gun.position.set(0, -4, 2); rightArm.add(gun);
 
@@ -476,7 +475,6 @@ function animate() {
 
     npcs.forEach(npc => {
         if (npc.group.userData.hp > 0) {
-            // Quái xoay về phía người chơi
             npc.group.rotation.y = Math.atan2(playerGroup.position.x - npc.group.position.x, playerGroup.position.z - npc.group.position.z);
         }
     });
