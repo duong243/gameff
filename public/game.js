@@ -25,7 +25,7 @@ let otherPlayers = {}; const MOUSE_SENSITIVITY = 1.0; const PLAYER_SPEED = 160;
 
 let currentMapLevel = 1;
 let currentMonsterKills = 0;
-const MONSTERS_PER_MAP = 5;
+const MONSTERS_PER_MAP = 2; // GIẢM XUỐNG 2 CON QUÁI
 
 let chatBox = document.getElementById('chat-container');
 let isDragging = false; let dragOffsetX = 0; let dragOffsetY = 0;
@@ -37,7 +37,6 @@ animate();
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    // Ánh sáng đơn giản nhất để đỡ lag
     const light = new THREE.AmbientLight(0xffffff, 1.5); 
     scene.add(light);
 
@@ -79,9 +78,8 @@ function init() {
         document.addEventListener('mouseup', stopDrag);
     }
 
-    // Tắt khử răng cưa và hạ độ phân giải để tăng FPS
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-    renderer.setPixelRatio(0.8); 
+    renderer.setPixelRatio(0.6); // HẠ ĐỘ PHÂN GIẢI XUỐNG 0.6
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
@@ -97,7 +95,7 @@ function init() {
 }
 
 // ==========================================
-// CHẾ ĐỘ SINH TỒN (TỐI ƯU HÓA TỐI ĐA)
+// CHẾ ĐỘ SINH TỒN (TỐI GIẢN)
 // ==========================================
 function buildCampaignMap() {
     for (let i = scene.children.length - 1; i >= 0; i--) {
@@ -108,9 +106,9 @@ function buildCampaignMap() {
     scene.background = new THREE.Color(0x2c3e50);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: 0x444444 }));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
-    // Chỉ tạo 5 bức tường để đỡ lag
-    for (let i = 0; i < 5; i++) {
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshLambertMaterial({ color: 0x555555 }));
+    // CHỈ TẠO 2 BỨC TƯỜNG
+    for (let i = 0; i < 2; i++) {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshBasicMaterial({ color: 0x555555 }));
         wall.position.set((Math.random() - 0.5) * 400, 20, (Math.random() - 0.5) * 400);
         scene.add(wall); objects.push(wall);
     }
@@ -125,7 +123,6 @@ function startCampaignLevel(level) {
     for (let i = 0; i < MONSTERS_PER_MAP; i++) createMonster(level);
 }
 
-// TẠO QUÁI VẬT ĐƠN GIẢN NHẤT (CHỈ 1 KHỐI HỘP)
 function createMonster(level) {
     const isBoss = level % 5 === 0;
     const monsterColor = isBoss ? 0xff0000 : 0x00ff00;
@@ -154,16 +151,15 @@ function createMonster(level) {
 }
 
 // ==========================================
-// MULTIPLAYER MAP (TỐI ƯU HÓA)
+// MULTIPLAYER MAP (TỐI GIẢN)
 // ==========================================
 function buildMultiplayerMap() {
     let floorColor = 0x55aa55;
     scene.background = new THREE.Color(0x87CEEB);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: floorColor }));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
-    
-    // Chỉ tạo 10 cây để đỡ lag
-    for (let i = 0; i < 10; i++) {
+    // CHỈ TẠO 5 CÂY
+    for (let i = 0; i < 5; i++) {
         const treeGroup = new THREE.Group();
         const trunk = new THREE.Mesh(new THREE.CylinderGeometry(2, 3, 30, 4), new THREE.MeshBasicMaterial({ color: 0x8B4513 }));
         trunk.position.y = 15; treeGroup.add(trunk);
@@ -180,7 +176,7 @@ function buildMultiplayerMap() {
 }
 
 // ==========================================
-// HÀM SHOOT (BỎ HIỆU ỨNG TIA LỬA)
+// HÀM SHOOT
 // ==========================================
 function shoot() {
     if (shootCooldown > 0) return; 
@@ -281,7 +277,7 @@ function drag(e) {
 function stopDrag() { isDragging = false; }
 
 // ==========================================
-// CÁC HÀM CƠ BẢN KHÁC (TỐI GIẢN)
+// CÁC HÀM CƠ BẢN KHÁC
 // ==========================================
 function createCharacter(color, name = "", isAdmin = false) {
     const group = new THREE.Group();
@@ -504,6 +500,7 @@ function animate() {
         velocityY -= GRAVITY * delta; cameraPos.y += velocityY * delta;
         if (cameraPos.y <= GROUND_LEVEL) { cameraPos.y = GROUND_LEVEL; velocityY = 0; isGrounded = true; }
 
+        // BỎ GỬI VỊ TRÍ LÊN SERVER NẾU LÀ CHẾ ĐỘ SINH TỒN
         if (gameMode !== 'campaign') {
             socket.emit('updatePosition', { x: cameraPos.x, y: cameraPos.y, z: cameraPos.z, rotationY: playerGroup.rotation.y, isArmed: isArmed });
         }
